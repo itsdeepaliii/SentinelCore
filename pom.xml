@@ -12,7 +12,7 @@
         <version>3.5.4</version>
         <relativePath/>
     </parent>
-
+    cd "C:\New folder (2)\SentinelCore\SentinelCore-Backend\frontend"
     <groupId>com.sentinelcore</groupId>
     <artifactId>SentinelCore-Backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
