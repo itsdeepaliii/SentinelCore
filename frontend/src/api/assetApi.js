@@ -1,12 +1,12 @@
+import api from "./axiosConfig";
 
-import axios from "axios";
+const API_BASE = "/assets";
 
-const API_BASE = "http://localhost:8080/api/assets";
-
-export const getAllAssets = () => axios.get(API_BASE);
+export const getAllAssets = () =>
+    api.get(API_BASE);
 
 export const getDashboardSummary = () =>
-    axios.get(`${API_BASE}/dashboard/summary`);
+    api.get(`${API_BASE}/dashboard/summary`);
 
 export const createAsset = (asset) =>
-    axios.post(API_BASE, asset);
+    api.post(API_BASE, asset);

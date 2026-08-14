@@ -2,43 +2,92 @@ import { useEffect, useState } from "react";
 import {
     Box,
     Typography,
+    Paper,
+    Chip,
+    Button,
     CircularProgress,
-    Card,
-    CardContent,
-    Chip
+    Alert as MuiAlert
 } from "@mui/material";
 
-import { getAllAssets } from "../api/assetApi";
+import { getOpenAlerts, resolveAlert } from "../api/alertApi";
 
 function Alerts() {
 
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const loadAlerts = async () => {
+
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await getOpenAlerts();
+
+            setAlerts(response.data);
+
+        } catch (error) {
+
+            console.error("Failed to load alerts:", error);
+
+            setError("Failed to load alerts.");
+
+        } finally {
+
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        getAllAssets()
-            .then((response) => {
-
-                const alertAssets = response.data.filter(
-                    (asset) =>
-                        asset.status === "WARNING" ||
-                        asset.status === "CRITICAL"
-                );
-
-                setAlerts(alertAssets);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error("Error fetching alerts:", error);
-                setLoading(false);
-            });
+        loadAlerts();
     }, []);
 
+    const handleResolve = async (id) => {
+
+        try {
+
+            await resolveAlert(id);
+
+            // Reload alerts after resolving
+            loadAlerts();
+
+        } catch (error) {
+
+            console.error("Failed to resolve alert:", error);
+
+            setError("Failed to resolve alert.");
+
+        }
+    };
+
+    const getSeverityColor = (severity) => {
+
+        switch (severity) {
+
+            case "CRITICAL":
+                return "error";
+
+            case "MEDIUM":
+                return "warning";
+
+            case "LOW":
+                return "info";
+
+            default:
+                return "default";
+        }
+    };
+
     return (
-        <Box sx={{ padding: 4 }}>
+        <Box
+            sx={{
+                padding: 4
+            }}
+        >
 
             <Typography
-                variant="h4"
+                variant="h3"
                 sx={{
                     fontWeight: 700,
                     mb: 1
@@ -48,119 +97,156 @@ function Alerts() {
             </Typography>
 
             <Typography
-                variant="body1"
+                variant="h6"
                 sx={{
-                    color: "#9ca3af",
-                    mb: 3
+                    color: "text.secondary",
+                    mb: 4
                 }}
             >
-                Monitor assets that require attention.
+                Monitor and manage infrastructure alerts.
             </Typography>
 
+            {error && (
+                <MuiAlert
+                    severity="error"
+                    sx={{ mb: 3 }}
+                >
+                    {error}
+                </MuiAlert>
+            )}
+
             {loading ? (
+
                 <Box
                     sx={{
                         display: "flex",
                         justifyContent: "center",
-                        mt: 5
+                        mt: 6
                     }}
                 >
                     <CircularProgress />
                 </Box>
+
+            ) : alerts.length === 0 ? (
+
+                <Paper
+                    sx={{
+                        padding: 4,
+                        borderRadius: 3,
+                        textAlign: "center"
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        color="text.secondary"
+                    >
+                        No open alerts
+                    </Typography>
+
+                    <Typography
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                    >
+                        All monitored assets are operating normally.
+                    </Typography>
+                </Paper>
+
             ) : (
+
                 <Box
                     sx={{
-                        display: "grid",
+                        display: "flex",
+                        flexDirection: "column",
                         gap: 2
                     }}
                 >
-                    {alerts.length === 0 ? (
-                        <Typography sx={{ color: "#9ca3af" }}>
-                            No active alerts.
-                        </Typography>
-                    ) : (
-                        alerts.map((asset) => (
-                            <Card
-                                key={asset.id}
+
+                    {alerts.map((alert) => (
+
+                        <Paper
+                            key={alert.id}
+                            sx={{
+                                padding: 3,
+                                borderRadius: 3
+                            }}
+                        >
+
+                            <Box
                                 sx={{
-                                    borderRadius: 3,
-                                    borderLeft: `5px solid ${
-                                        asset.status === "CRITICAL"
-                                            ? "#d32f2f"
-                                            : "#ed6c02"
-                                    }`,
-                                    boxShadow:
-                                        "0 4px 15px rgba(0,0,0,0.08)"
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    gap: 2
                                 }}
                             >
-                                <CardContent>
 
-                                    <Box
+                                <Box>
+
+                                    <Typography
+                                        variant="h6"
                                         sx={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center"
+                                            fontWeight: 600
                                         }}
                                     >
-                                        <Box>
-                                            <Typography
-                                                variant="h6"
-                                                sx={{ fontWeight: 600 }}
-                                            >
-                                                {asset.assetName}
-                                            </Typography>
+                                        {alert.assetName}
+                                    </Typography>
 
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: "#9ca3af",
-                                                    mt: 0.5
-                                                }}
-                                            >
-                                                {asset.assetType} •{" "}
-                                                {asset.ipAddress}
-                                            </Typography>
-                                        </Box>
-
-                                        <Chip
-                                            label={asset.status}
-                                            color={
-                                                asset.status === "CRITICAL"
-                                                    ? "error"
-                                                    : "warning"
-                                            }
-                                        />
-                                    </Box>
-
-                                    <Box
+                                    <Typography
                                         sx={{
-                                            display: "flex",
-                                            gap: 4,
-                                            mt: 2
+                                            mt: 1
                                         }}
                                     >
-                                        <Typography variant="body2">
-                                            CPU: {asset.cpuUsage}%
-                                        </Typography>
+                                        {alert.message}
+                                    </Typography>
 
-                                        <Typography variant="body2">
-                                            Memory: {asset.memoryUsage}%
-                                        </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ mt: 1 }}
+                                    >
+                                        Created:{" "}
+                                        {new Date(
+                                            alert.createdAt
+                                        ).toLocaleString()}
+                                    </Typography>
 
-                                        <Typography variant="body2">
-                                            Disk: {asset.diskUsage}%
-                                        </Typography>
+                                </Box>
 
-                                        <Typography variant="body2">
-                                            Network: {asset.networkUsage}%
-                                        </Typography>
-                                    </Box>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 2
+                                    }}
+                                >
 
-                                </CardContent>
-                            </Card>
-                        ))
-                    )}
+                                    <Chip
+                                        label={alert.severity}
+                                        color={getSeverityColor(
+                                            alert.severity
+                                        )}
+                                    />
+
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={() =>
+                                            handleResolve(alert.id)
+                                        }
+                                    >
+                                        Resolve
+                                    </Button>
+
+                                </Box>
+
+                            </Box>
+
+                        </Paper>
+
+                    ))}
+
                 </Box>
+
             )}
 
         </Box>
