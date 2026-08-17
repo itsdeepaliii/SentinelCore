@@ -1,9 +1,9 @@
 package com.sentinelcore.sentinelcorebackend.entity;
 
 import jakarta.persistence.*;
-        import lombok.*;
+import lombok.*;
 
-        import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "alerts")
@@ -18,8 +18,9 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "asset_id", nullable = false)
-    private Long assetId;
+    @ManyToOne
+    @JoinColumn(name = "asset_id", nullable = false)
+    private Asset asset;
 
     @Column(name = "asset_name", nullable = false)
     private String assetName;
@@ -41,7 +42,10 @@ public class Alert {
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
+
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
 
         if (this.status == null) {
             this.status = "OPEN";

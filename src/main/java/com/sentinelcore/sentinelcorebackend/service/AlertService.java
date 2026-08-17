@@ -7,6 +7,7 @@ import com.sentinelcore.sentinelcorebackend.repository.AlertRepository;
 import com.sentinelcore.sentinelcorebackend.repository.AssetRepository;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,8 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final AssetRepository assetRepository;
 
+
+    // CREATE ALERT
     public AlertDTO createAlert(
             Long assetId,
             String severity,
@@ -31,7 +34,7 @@ public class AlertService {
                 );
 
         Alert alert = Alert.builder()
-                .assetId(asset.getId())
+                .asset(asset)
                 .assetName(asset.getAssetName())
                 .severity(severity)
                 .message(message)
@@ -39,11 +42,14 @@ public class AlertService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        Alert savedAlert = alertRepository.save(alert);
+        Alert savedAlert =
+                alertRepository.save(alert);
 
         return convertToDTO(savedAlert);
     }
 
+
+    // GET ALL ALERTS
     public List<AlertDTO> getAllAlerts() {
 
         return alertRepository.findAll()
@@ -52,6 +58,8 @@ public class AlertService {
                 .toList();
     }
 
+
+    // GET OPEN ALERTS
     public List<AlertDTO> getOpenAlerts() {
 
         return alertRepository.findByStatus("OPEN")
@@ -60,6 +68,8 @@ public class AlertService {
                 .toList();
     }
 
+
+    // RESOLVE ALERT
     public AlertDTO resolveAlert(Long id) {
 
         Alert alert = alertRepository.findById(id)
@@ -70,22 +80,37 @@ public class AlertService {
         alert.setStatus("RESOLVED");
         alert.setResolvedAt(LocalDateTime.now());
 
-        Alert resolvedAlert = alertRepository.save(alert);
+        Alert resolvedAlert =
+                alertRepository.save(alert);
 
         return convertToDTO(resolvedAlert);
     }
 
+
+    // CONVERT ENTITY → DTO
     private AlertDTO convertToDTO(Alert alert) {
 
         return AlertDTO.builder()
                 .id(alert.getId())
-                .assetId(alert.getAssetId())
-                .assetName(alert.getAssetName())
+
+                .assetId(
+                        alert.getAsset().getId()
+                )
+
+                .assetName(
+                        alert.getAsset().getAssetName()
+                )
+
                 .severity(alert.getSeverity())
+
                 .message(alert.getMessage())
+
                 .status(alert.getStatus())
+
                 .createdAt(alert.getCreatedAt())
+
                 .resolvedAt(alert.getResolvedAt())
+
                 .build();
     }
 }
